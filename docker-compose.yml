@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  todoist-scheduler-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: todoist-scheduler-bot-kotlin
+    restart: unless-stopped
+
+    # Load environment variables from .env file
+    env_file:
+      - .env
+
+    # Override environment variables for container
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ROOT=INFO
+
+    # Resource limits (optimized for Spring Boot)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network mode (default bridge is fine)
+    network_mode: bridge
+
+    # Optional: Mount logs directory for persistent logging
+    volumes:
+      - ./logs:/app/logs
+
+# Optional: Add a network if you need to connect to other services
+# networks:
+#   default:
+#     name: todoist-bot-network
