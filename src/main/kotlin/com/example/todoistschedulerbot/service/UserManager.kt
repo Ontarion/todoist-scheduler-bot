@@ -69,7 +69,7 @@ class UserManager(
         val allowedUsersStr = appConfig.users.allowed
 
         if (allowedUsersStr.isBlank()) {
-            logger.warning("ALLOWED_USERS не настроен - бот будет отвечать всем")
+            logger.warn("ALLOWED_USERS не настроен - бот будет отвечать всем")
             return emptyList()
         }
 
@@ -114,7 +114,7 @@ class UserManager(
         }
 
         // Если и default нет, возвращаем null
-        logger.warning("Конфигурация не найдена для пользователя $userId")
+        logger.warn("Конфигурация не найдена для пользователя $userId")
         return null
     }
 
