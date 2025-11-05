@@ -1,8 +1,8 @@
 # Dockerfile for Todoist Scheduler Bot (Kotlin + Spring Boot)
 # Multi-architecture support for amd64 and arm64
 
-# Use Eclipse Temurin JDK 17 as base image
-FROM eclipse-temurin:17-jdk-alpine
+# Use Amazon Corretto JDK 21 as base image
+FROM amazoncorretto:21-alpine
 
 # Set working directory
 WORKDIR /app
@@ -28,7 +28,7 @@ COPY src/ src/
 RUN ./gradlew build --no-daemon --parallel -x test
 
 # Create a smaller runtime image
-FROM eclipse-temurin:17-jre-alpine
+FROM amazoncorretto:21-alpine
 
 # Install necessary runtime packages
 RUN apk add --no-cache \
