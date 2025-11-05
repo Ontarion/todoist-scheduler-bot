@@ -44,18 +44,15 @@ class DateParser {
         "послезавтра" to 2
     )
 
-    // Более гибкий паттерн времени
-    private val timePattern = Regex("""(?:^|\s)(\d{1,2})(?:[:.:](\d{2}))?(?:\s|$)""")
+    // Паттерн времени с явными разделителями (ищем после "в" или в конце)
+    private val timePattern = Regex("""(?:\bв\s+|^)(\d{1,2})[:.](\d{2})\b""")
 
     fun parseDate(text: String): LocalDateTime? {
         val normalizedText = text.lowercase().trim()
         logger.info("Парсим текст: $normalizedText")
 
         // Ищем время в тексте
-        val timeMatches = timePattern.findAll(" $normalizedText ").toList()
-        val parsedTime = if (timeMatches.isNotEmpty()) {
-            parseTime(timeMatches.first())
-        } else null
+        val parsedTime = parseTime(normalizedText)
 
         // Если время не найдено, используем время по умолчанию (14:00)
         val finalTime = parsedTime ?: Pair(14, 0)
@@ -67,6 +64,22 @@ class DateParser {
             ?: parseSpecificDate(normalizedText)
 
         return parsedDate?.atTime(finalTime.first, finalTime.second)
+    }
+
+    private fun parseTime(text: String): Pair<Int, Int>? {
+        val match = timePattern.find(text)
+        return if (match != null) {
+            try {
+                val hour = match.groupValues[1].toInt()
+                val minute = match.groupValues[2].toInt()
+
+                if (hour in 0..23 && minute in 0..59) {
+                    Pair(hour, minute)
+                } else null
+            } catch (e: NumberFormatException) {
+                null
+            }
+        } else null
     }
 
     private fun parseTime(match: MatchResult): Pair<Int, Int>? {

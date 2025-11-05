@@ -131,6 +131,6 @@ class UserManager(
     }
 
     fun listConfiguredUsers(): List<String> {
-        return usersConfig.keys.toList()
+        return usersConfig.keys.filter { it != "default" }.toList()
     }
 }
