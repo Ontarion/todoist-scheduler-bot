@@ -21,6 +21,7 @@ class UserManager(
     data class UserConfig(
         val telegramBotToken: String? = null,
         val todoistToken: String? = null,
+        val timezone: String? = null,
         val eventTitle: String = "Стрижка",
         val addComment: Boolean = true
     )
@@ -47,6 +48,7 @@ class UserManager(
                             UserConfig(
                                 telegramBotToken = configMap["telegram_bot_token"] as? String,
                                 todoistToken = configMap["todoist_token"] as? String,
+                                timezone = configMap["timezone"] as? String,
                                 eventTitle = configMap["event_title"] as? String ?: "Стрижка",
                                 addComment = configMap["add_comment"] as? Boolean ?: true
                             )
@@ -108,6 +110,10 @@ class UserManager(
 
     fun getTodoistToken(userId: String): String? {
         return getUserConfig(userId)?.todoistToken
+    }
+
+    fun getTimezone(userId: String): String? {
+        return getUserConfig(userId)?.timezone
     }
 
     fun getEventTitle(userId: String): String {
