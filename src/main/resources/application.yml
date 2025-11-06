@@ -1,0 +1,20 @@
+app:
+  timezone: Europe/Moscow
+  default:
+    appointment:
+      duration:
+        minutes: 90
+      time:
+        hour: 14
+        minute: 0
+  users:
+    config: ${USERS_CONFIG:{}}
+
+logging:
+  level:
+    com:
+      example: INFO
+    org:
+      telegram: INFO
+      springframework:
+        web: INFO
