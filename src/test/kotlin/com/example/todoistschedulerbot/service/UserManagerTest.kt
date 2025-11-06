@@ -32,69 +32,34 @@ class UserManagerTest {
     }
 
     @Test
-    fun `getAllowedUsers should return empty list when allowed is blank`() {
+    fun `getAllowedUsers should return users from config except default`() {
         // Given
-        `when`(appConfig.users.allowed).thenReturn("")
+        val userConfigJson = """
+            {
+                "user1": {"todoist_token": "token1"},
+                "user2": {"todoist_token": "token2"},
+                "default": {"todoist_token": "defaultToken"}
+            }
+        """.trimIndent()
+        `when`(appConfig.users.config).thenReturn(userConfigJson)
 
         // When
         val result = userManager.getAllowedUsers()
 
         // Then
-        assertTrue(result.isEmpty())
+        assertEquals(listOf("user1", "user2"), result)
     }
 
     @Test
-    fun `getAllowedUsers should parse JSON array format`() {
+    fun `isUserAllowed should return true when user is in config`() {
         // Given
-        `when`(appConfig.users.allowed).thenReturn("""["user1", "user2", "user3"]""")
-
-        // When
-        val result = userManager.getAllowedUsers()
-
-        // Then
-        assertEquals(listOf("user1", "user2", "user3"), result)
-    }
-
-    @Test
-    fun `getAllowedUsers should parse comma separated format`() {
-        // Given
-        `when`(appConfig.users.allowed).thenReturn("user1,user2,user3")
-
-        // When
-        val result = userManager.getAllowedUsers()
-
-        // Then
-        assertEquals(listOf("user1", "user2", "user3"), result)
-    }
-
-    @Test
-    fun `getAllowedUsers should trim whitespace and filter empty values`() {
-        // Given
-        `when`(appConfig.users.allowed).thenReturn("user1, user2 , , user3")
-
-        // When
-        val result = userManager.getAllowedUsers()
-
-        // Then
-        assertEquals(listOf("user1", "user2", "user3"), result)
-    }
-
-    @Test
-    fun `isUserAllowed should return true when allowed users list is empty`() {
-        // Given
-        `when`(appConfig.users.allowed).thenReturn("")
-
-        // When
-        val result = userManager.isUserAllowed("anyUser")
-
-        // Then
-        assertTrue(result)
-    }
-
-    @Test
-    fun `isUserAllowed should return true when user is in allowed list`() {
-        // Given
-        `when`(appConfig.users.allowed).thenReturn("user1,user2,user3")
+        val userConfigJson = """
+            {
+                "user1": {"todoist_token": "token1"},
+                "user2": {"todoist_token": "token2"}
+            }
+        """.trimIndent()
+        `when`(appConfig.users.config).thenReturn(userConfigJson)
 
         // When
         val result = userManager.isUserAllowed("user2")
@@ -104,9 +69,15 @@ class UserManagerTest {
     }
 
     @Test
-    fun `isUserAllowed should return false when user is not in allowed list`() {
+    fun `isUserAllowed should return false when user is not in config`() {
         // Given
-        `when`(appConfig.users.allowed).thenReturn("user1,user2,user3")
+        val userConfigJson = """
+            {
+                "user1": {"todoist_token": "token1"},
+                "user2": {"todoist_token": "token2"}
+            }
+        """.trimIndent()
+        `when`(appConfig.users.config).thenReturn(userConfigJson)
 
         // When
         val result = userManager.isUserAllowed("user4")

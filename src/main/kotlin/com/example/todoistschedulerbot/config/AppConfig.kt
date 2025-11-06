@@ -25,7 +25,6 @@ data class AppConfig(
     }
 
     data class UsersConfig(
-        var allowed: String = "",
         var config: String = "{}"
     )
 }

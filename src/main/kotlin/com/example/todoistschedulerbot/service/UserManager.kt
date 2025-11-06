@@ -68,25 +68,7 @@ class UserManager(
     }
 
     fun getAllowedUsers(): List<String> {
-        val allowedUsersStr = appConfig.users.allowed
-
-        if (allowedUsersStr.isBlank()) {
-            logger.warn("ALLOWED_USERS не настроен - бот будет отвечать всем")
-            return emptyList()
-        }
-
-        return try {
-            // Поддерживаем как JSON массив, так и список через запятую
-            if (allowedUsersStr.trim().startsWith("[")) {
-                val userIds: List<String> = objectMapper.readValue(allowedUsersStr)
-                userIds.map { it.trim() }
-            } else {
-                allowedUsersStr.split(",").map { it.trim() }.filter { it.isNotBlank() }
-            }
-        } catch (e: Exception) {
-            logger.error("Ошибка парсинга ALLOWED_USERS: ${e.message}")
-            emptyList()
-        }
+        return usersConfig.keys.filter { it != "default" }.toList()
     }
 
     fun isUserAllowed(userId: String): Boolean {
