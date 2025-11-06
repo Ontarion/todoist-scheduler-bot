@@ -5,8 +5,6 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.LocalDate
 import java.time.DayOfWeek
-import java.time.temporal.TemporalAdjusters
-import kotlin.text.Regex
 
 @Service
 class DateParser {
@@ -31,37 +29,38 @@ class DateParser {
     private val weekdaysRu = mapOf(
         "понедельник" to DayOfWeek.MONDAY, "пн" to DayOfWeek.MONDAY, "пон" to DayOfWeek.MONDAY,
         "вторник" to DayOfWeek.TUESDAY, "вт" to DayOfWeek.TUESDAY, "втор" to DayOfWeek.TUESDAY,
-        "среда" to DayOfWeek.WEDNESDAY, "ср" to DayOfWeek.WEDNESDAY, "сред" to DayOfWeek.WEDNESDAY,
+        "среда" to DayOfWeek.WEDNESDAY, "среду" to DayOfWeek.WEDNESDAY, "ср" to DayOfWeek.WEDNESDAY, "сред" to DayOfWeek.WEDNESDAY,
         "четверг" to DayOfWeek.THURSDAY, "чт" to DayOfWeek.THURSDAY, "четв" to DayOfWeek.THURSDAY,
-        "пятница" to DayOfWeek.FRIDAY, "пт" to DayOfWeek.FRIDAY, "пятн" to DayOfWeek.FRIDAY,
-        "суббота" to DayOfWeek.SATURDAY, "сб" to DayOfWeek.SATURDAY, "субб" to DayOfWeek.SATURDAY,
+        "пятница" to DayOfWeek.FRIDAY, "пятницу" to DayOfWeek.FRIDAY, "пт" to DayOfWeek.FRIDAY, "пятн" to DayOfWeek.FRIDAY,
+        "суббота" to DayOfWeek.SATURDAY, "субботу" to DayOfWeek.SATURDAY, "сб" to DayOfWeek.SATURDAY, "субб" to DayOfWeek.SATURDAY,
         "воскресенье" to DayOfWeek.SUNDAY, "вс" to DayOfWeek.SUNDAY, "воскр" to DayOfWeek.SUNDAY
     )
 
     private val relativeDates = mapOf(
-        "сегодня" to 0,
+        "послезавтра" to 2,
         "завтра" to 1,
-        "послезавтра" to 2
+        "сегодня" to 0
     )
 
-    // Паттерн времени с явными разделителями (ищем после "в" или в конце)
-    private val timePattern = Regex("""(?:\bв\s+|^)(\d{1,2})[:.](\d{2})\b""")
+    private val timePattern = Regex("""(?:^|\s)в\s+(\d{1,2})[:.](\d{2})(?:\s|$)|(?<=\s)(\d{1,2})[:.](\d{2})(?=\s|$)""")
 
     fun parseDate(text: String): LocalDateTime? {
         val normalizedText = text.lowercase().trim()
         logger.info("Парсим текст: $normalizedText")
 
-        // Ищем время в тексте
         val parsedTime = parseTime(normalizedText)
-
-        // Если время не найдено, используем время по умолчанию (14:00)
         val finalTime = parsedTime ?: Pair(14, 0)
         logger.info("Найдено время: ${finalTime.first}:${finalTime.second.toString().padStart(2, '0')}")
 
-        // Ищем дату
         val parsedDate = parseRelativeDate(normalizedText)
             ?: parseWeekday(normalizedText)
             ?: parseSpecificDate(normalizedText)
+
+        if (parsedDate != null) {
+            logger.info("Найдена дата: $parsedDate")
+        } else {
+            logger.warn("Не удалось распарсить дату из текста: $normalizedText")
+        }
 
         return parsedDate?.atTime(finalTime.first, finalTime.second)
     }
@@ -70,9 +69,10 @@ class DateParser {
         val match = timePattern.find(text)
         return if (match != null) {
             try {
-                val hour = match.groupValues[1].toInt()
-                val minute = match.groupValues[2].toInt()
-
+                val hour = (match.groupValues[1].takeIf { it.isNotEmpty() } 
+                    ?: match.groupValues[3]).toInt()
+                val minute = (match.groupValues[2].takeIf { it.isNotEmpty() } 
+                    ?: match.groupValues[4]).toInt()
                 if (hour in 0..23 && minute in 0..59) {
                     Pair(hour, minute)
                 } else null
@@ -82,25 +82,10 @@ class DateParser {
         } else null
     }
 
-    private fun parseTime(match: MatchResult): Pair<Int, Int>? {
-        return try {
-            val hour = match.groupValues[1].toInt()
-            val minute = match.groupValues.getOrNull(2)?.toIntOrNull() ?: 0
-
-            if (hour in 0..23 && minute in 0..59) {
-                Pair(hour, minute)
-            } else null
-        } catch (e: NumberFormatException) {
-            null
-        }
-    }
-
     private fun parseRelativeDate(text: String): LocalDate? {
-        // Сортируем по длине для поиска более длинных слов первыми
-        val sortedDates = relativeDates.entries.sortedByDescending { it.key.length }
-
-        for ((word, daysOffset) in sortedDates) {
-            if (Regex("""\b${Regex.escape(word)}\b""").containsMatchIn(text)) {
+        for ((word, daysOffset) in relativeDates) {
+            if (containsWord(text, word)) {
+                logger.debug("Найдено относительное слово '$word', добавляем дней: $daysOffset")
                 return LocalDate.now().plusDays(daysOffset.toLong())
             }
         }
@@ -108,21 +93,33 @@ class DateParser {
     }
 
     private fun parseWeekday(text: String): LocalDate? {
-        for ((weekdayName, weekday) in weekdaysRu) {
-            if (weekdayName in text) {
+        val sortedWeekdays = weekdaysRu.entries.sortedByDescending { it.key.length }
+        
+        for ((weekdayName, weekday) in sortedWeekdays) {
+            if (containsWord(text, weekdayName)) {
                 val today = LocalDate.now()
                 val daysAhead = weekday.value - today.dayOfWeek.value
-
-                // Проверяем модификатор "следующую"
-                val hasNextModifier = "следующую" in text || "следующий" in text || "следующая" in text
+                val hasNextModifier = containsWord(text, "следующую") || 
+                                     containsWord(text, "следующий") || 
+                                     containsWord(text, "следующая")
                 var adjustedDaysAhead = daysAhead
 
                 if (hasNextModifier) {
-                    adjustedDaysAhead += 7
+                    // "Следующий X" означает пропустить ближайший X и взять следующий
+                    // Если день недели еще впереди на этой неделе, добавляем всю неделю
+                    // Если день недели уже прошел, добавляем неделю к стандартному смещению
+                    if (daysAhead > 0) {
+                        // День еще впереди на этой неделе, но мы хотим следующий, поэтому +7
+                        adjustedDaysAhead = daysAhead + 7
+                    } else {
+                        // День уже прошел, берем следующую неделю
+                        adjustedDaysAhead = daysAhead + 14
+                    }
                 } else if (daysAhead <= 0) {
                     adjustedDaysAhead += 7
                 }
 
+                logger.debug("Распознан день недели '$weekdayName', добавляем дней: $adjustedDaysAhead")
                 return today.plusDays(adjustedDaysAhead.toLong())
             }
         }
@@ -132,7 +129,6 @@ class DateParser {
     private fun parseSpecificDate(text: String): LocalDate? {
         val currentYear = LocalDate.now().year
 
-        // Паттерн: день + месяц словами
         val monthPattern = Regex("""(\d{1,2})\s+(январь|января|янв|февраль|февраля|фев|март|марта|мар|апрель|апреля|апр|май|мая|июнь|июня|июн|июль|июля|июл|август|августа|авг|сентябрь|сентября|сен|октябрь|октября|окт|ноябрь|ноября|ноя|декабрь|декабря|дек)""")
         val monthMatch = monthPattern.find(text)
 
@@ -144,12 +140,9 @@ class DateParser {
 
                 if (month != null && day in 1..31) {
                     var resultDate = LocalDate.of(currentYear, month, day)
-
-                    // Если дата уже прошла в этом году, берем следующий год
-                    if (resultDate.isBefore(LocalDate.now())) {
+                    if (resultDate.isBefore(LocalDate.now()) || resultDate.isEqual(LocalDate.now())) {
                         resultDate = LocalDate.of(currentYear + 1, month, day)
                     }
-
                     resultDate
                 } else null
             } catch (e: Exception) {
@@ -157,8 +150,7 @@ class DateParser {
             }
         }
 
-        // Паттерн: дд.мм или дд/мм
-        val datePattern = Regex("""(\d{1,2})[./](\d{1,2})(?:[./](\d{4}))?""")
+        val datePattern = Regex("""(?:^|\s)(\d{1,2})[./](\d{1,2})(?:[./](\d{4}))?(?:\s|$)""")
         val dateMatch = datePattern.find(text)
 
         if (dateMatch != null) {
@@ -169,12 +161,9 @@ class DateParser {
 
                 if (day in 1..31 && month in 1..12) {
                     var resultDate = LocalDate.of(year, month, day)
-
-                    // Если год не указан и дата уже прошла в этом году, берем следующий год
-                    if (dateMatch.groupValues.getOrNull(3) == null && resultDate.isBefore(LocalDate.now())) {
+                    if (dateMatch.groupValues.getOrNull(3) == null && (resultDate.isBefore(LocalDate.now()) || resultDate.isEqual(LocalDate.now()))) {
                         resultDate = LocalDate.of(currentYear + 1, month, day)
                     }
-
                     resultDate
                 } else null
             } catch (e: Exception) {
@@ -183,5 +172,10 @@ class DateParser {
         }
 
         return null
+    }
+
+    private fun containsWord(text: String, word: String): Boolean {
+        val words = text.split(Regex("""[\s,.:;!?]+"""))
+        return words.contains(word)
     }
 }
