@@ -19,6 +19,7 @@ class UserManager(
     }
 
     data class UserConfig(
+        val telegramBotToken: String? = null,
         val todoistToken: String? = null,
         val eventTitle: String = "Стрижка",
         val addComment: Boolean = true
@@ -44,6 +45,7 @@ class UserManager(
                             @Suppress("UNCHECKED_CAST")
                             val configMap = value as Map<String, Any>
                             UserConfig(
+                                telegramBotToken = configMap["telegram_bot_token"] as? String,
                                 todoistToken = configMap["todoist_token"] as? String,
                                 eventTitle = configMap["event_title"] as? String ?: "Стрижка",
                                 addComment = configMap["add_comment"] as? Boolean ?: true
@@ -116,6 +118,10 @@ class UserManager(
         // Если и default нет, возвращаем null
         logger.warn("Конфигурация не найдена для пользователя $userId")
         return null
+    }
+
+    fun getTelegramBotToken(userId: String): String? {
+        return getUserConfig(userId)?.telegramBotToken
     }
 
     fun getTodoistToken(userId: String): String? {

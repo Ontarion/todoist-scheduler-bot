@@ -1,10 +1,12 @@
 package com.example.todoistschedulerbot.config
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.example.todoistschedulerbot.service.UserManager
 import org.springframework.stereotype.Component
 
 @Component
-@ConfigurationProperties(prefix = "telegram.bot")
 data class TelegramConfig(
-    var token: String = ""
-)
+    private val userManager: UserManager
+) {
+    val token: String
+        get() = userManager.getTelegramBotToken("default") ?: ""
+}

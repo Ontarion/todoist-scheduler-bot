@@ -21,7 +21,6 @@ class TodoistClient(
     private val webClient: WebClient by lazy {
         webClientBuilder
             .baseUrl(todoistConfig.baseUrl)
-            .defaultHeader("Authorization", "Bearer ${todoistConfig.token}")
             .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
             .build()
     }
@@ -43,12 +42,13 @@ class TodoistClient(
     )
 
     fun createHaircutEvent(
+        token: String,
         appointmentDateTime: LocalDateTime,
         eventTitle: String = "Стрижка",
         comment: String = "",
         addComment: Boolean = true
     ): Pair<Boolean, String> {
-        if (todoistConfig.token.isBlank()) {
+        if (token.isBlank()) {
             return false to "API токен Todoist не настроен"
         }
 
@@ -76,6 +76,7 @@ class TodoistClient(
 
             val response = webClient.post()
                 .uri("/tasks")
+                .header("Authorization", "Bearer $token")
                 .bodyValue(taskRequest)
                 .retrieve()
                 .bodyToMono(TodoistTaskResponse::class.java)
@@ -101,8 +102,8 @@ class TodoistClient(
         }
     }
 
-    fun deleteTask(taskId: String): Pair<Boolean, String> {
-        if (todoistConfig.token.isBlank()) {
+    fun deleteTask(token: String, taskId: String): Pair<Boolean, String> {
+        if (token.isBlank()) {
             return false to "API токен Todoist не настроен"
         }
 
@@ -115,6 +116,7 @@ class TodoistClient(
 
             val response = webClient.delete()
                 .uri("/tasks/$taskId")
+                .header("Authorization", "Bearer $token")
                 .retrieve()
                 .toBodilessEntity()
                 .onErrorResume { e ->
@@ -141,14 +143,15 @@ class TodoistClient(
         }
     }
 
-    fun testConnection(): Pair<Boolean, String> {
-        if (todoistConfig.token.isBlank()) {
+    fun testConnection(token: String): Pair<Boolean, String> {
+        if (token.isBlank()) {
             return false to "API токен не настроен"
         }
 
         return try {
             val response = webClient.get()
                 .uri("/projects")
+                .header("Authorization", "Bearer $token")
                 .retrieve()
                 .toBodilessEntity()
                 .onErrorResume { e ->

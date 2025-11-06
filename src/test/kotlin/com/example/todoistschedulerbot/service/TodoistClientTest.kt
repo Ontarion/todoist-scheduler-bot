@@ -26,11 +26,8 @@ class TodoistClientTest {
 
     @Test
     fun `createHaircutEvent should return error when token is blank`() {
-        // Given
-        `when`(todoistConfig.token).thenReturn("")
-
         // When
-        val result = todoistClient.createHaircutEvent(LocalDateTime.now())
+        val result = todoistClient.createHaircutEvent("", LocalDateTime.now())
 
         // Then
         assertFalse(result.first)
@@ -39,11 +36,8 @@ class TodoistClientTest {
 
     @Test
     fun `deleteTask should return error when token is blank`() {
-        // Given
-        `when`(todoistConfig.token).thenReturn("")
-
         // When
-        val result = todoistClient.deleteTask("task-123")
+        val result = todoistClient.deleteTask("", "task-123")
 
         // Then
         assertFalse(result.first)
@@ -52,11 +46,8 @@ class TodoistClientTest {
 
     @Test
     fun `deleteTask should return error when taskId is blank`() {
-        // Given
-        `when`(todoistConfig.token).thenReturn("test-token")
-
         // When
-        val result = todoistClient.deleteTask("")
+        val result = todoistClient.deleteTask("test-token", "")
 
         // Then
         assertFalse(result.first)
@@ -65,11 +56,8 @@ class TodoistClientTest {
 
     @Test
     fun `testConnection should return error when token is blank`() {
-        // Given
-        `when`(todoistConfig.token).thenReturn("")
-
         // When
-        val result = todoistClient.testConnection()
+        val result = todoistClient.testConnection("")
 
         // Then
         assertFalse(result.first)

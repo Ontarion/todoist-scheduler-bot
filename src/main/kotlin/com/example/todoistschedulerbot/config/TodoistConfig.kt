@@ -6,6 +6,5 @@ import org.springframework.stereotype.Component
 @Component
 @ConfigurationProperties(prefix = "todoist.api")
 data class TodoistConfig(
-    var token: String = "",
     var baseUrl: String = "https://api.todoist.com/rest/v2"
 )

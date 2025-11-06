@@ -160,6 +160,7 @@ class HaircutBot(
 
         // Создаем событие в Todoist
         val (success, result) = todoistClient.createHaircutEvent(
+            todoistToken,
             parsedDateTime,
             eventTitle,
             comment,
@@ -277,7 +278,7 @@ class HaircutBot(
             answerCallbackQuery(callbackQuery.id, "⏳ Удаляем запись...")
 
             // Удаляем задачу
-            val (success, message) = todoistClient.deleteTask(taskId)
+            val (success, message) = todoistClient.deleteTask(userConfig!!.todoistToken!!, taskId)
 
             if (success) {
                 // Обновляем сообщение
