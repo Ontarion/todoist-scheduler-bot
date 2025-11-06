@@ -19,7 +19,6 @@ class UserManager(
     }
 
     data class UserConfig(
-        val telegramBotToken: String? = null,
         val todoistToken: String? = null,
         val timezone: String? = null,
         val eventTitle: String = "Стрижка",
@@ -46,7 +45,6 @@ class UserManager(
                             @Suppress("UNCHECKED_CAST")
                             val configMap = value as Map<String, Any>
                             UserConfig(
-                                telegramBotToken = configMap["telegram_bot_token"] as? String,
                                 todoistToken = configMap["todoist_token"] as? String,
                                 timezone = configMap["timezone"] as? String,
                                 eventTitle = configMap["event_title"] as? String ?: "Стрижка",
@@ -102,10 +100,6 @@ class UserManager(
         // Если и default нет, возвращаем null
         logger.warn("Конфигурация не найдена для пользователя $userId")
         return null
-    }
-
-    fun getTelegramBotToken(userId: String): String? {
-        return getUserConfig(userId)?.telegramBotToken
     }
 
     fun getTodoistToken(userId: String): String? {
